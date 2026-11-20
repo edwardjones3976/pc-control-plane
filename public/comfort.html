@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <title>Desktop Comfort | PC Control Plane</title>
+  <link rel="stylesheet" href="/comfort.css">
+  <script src="/comfort.js" type="module"></script>
+</head>
+<body class="comfort-page">
+  <div class="comfort-shell">
+    <nav class="comfort-nav" aria-label="PC Control Plane pages">
+      <a class="comfort-brand" href="/">PC Control Plane</a>
+      <a href="/lab">Performance Lab</a>
+    </nav>
+    <main id="main">
+      <header class="comfort-header">
+        <div><h1>Desktop Comfort</h1><p id="comfort-status" role="status">Reading settings...</p></div>
+        <label class="comfort-toggle"><span id="comfort-enabled-label">Off</span><input id="comfort-enabled" type="checkbox" role="switch" aria-label="Desktop Comfort" disabled><span class="comfort-switch" aria-hidden="true"></span></label>
+      </header>
+      <section aria-labelledby="appearance-title" class="comfort-section comfort-appearance">
+        <div class="comfort-section-heading"><div><h2 id="appearance-title">Appearance</h2><p id="appearance-note">Day is light. Evening is dark.</p></div></div>
+        <div class="comfort-section-body">
+          <fieldset class="comfort-segments" aria-describedby="appearance-note"><legend class="sr-only">Appearance</legend>
+            <label><input type="radio" name="appearance" value="resume" disabled><span>Automatic</span></label>
+            <label><input type="radio" name="appearance" value="light" disabled><span>Day</span></label>
+            <label><input type="radio" name="appearance" value="dark" disabled><span>Evening</span></label>
+          </fieldset>
+          <figure class="comfort-preview" id="comfort-preview" data-theme="light" aria-label="Illustrative desktop preview">
+            <div class="preview-window" aria-hidden="true"><div class="preview-title"><span class="preview-app-icon"></span><span>My desktop</span><span class="preview-window-buttons">&#8722; &nbsp; &#9633;</span></div><div class="preview-content"><div class="preview-sidebar"><i></i><i></i><i></i></div><div class="preview-document"><span>Welcome back</span><i></i><i></i><i></i></div></div><div class="preview-tint" id="preview-tint"></div></div>
+            <figcaption>Appearance preview</figcaption>
+          </figure>
+          <p id="appearance-applied" class="comfort-caption">Windows appearance not yet verified.</p>
+        </div>
+      </section>
+      <section aria-labelledby="warmth-title" class="comfort-section">
+        <div class="comfort-section-heading"><div><h2 id="warmth-title">Screen warmth</h2><p>Less blue light in the evening.</p></div></div>
+        <div class="comfort-section-body">
+          <div class="warmth-heading"><label for="comfort-strength">Evening strength</label><output id="comfort-strength-label" for="comfort-strength" aria-live="off">85%</output></div>
+          <input id="comfort-strength" type="range" min="0" max="100" step="1" value="85" aria-describedby="warmth-state warmth-preview-state" disabled>
+          <p class="comfort-caption">To avoid stacking tints, turn off Night Light and its schedule in <a href="ms-settings:nightlight">Windows Night Light settings</a>.</p>
+          <div class="warmth-endpoints"><span>Neutral</span><span>Redder</span></div>
+          <div class="warmth-amplifier">
+            <div class="warmth-heading"><label for="comfort-amplifier">Warmth amplifier</label><output id="comfort-amplifier-label" for="comfort-amplifier" aria-live="off">+0%</output></div>
+            <input id="comfort-amplifier" type="range" min="0" max="400" step="1" value="0" aria-describedby="comfort-amplifier-note" disabled>
+            <p id="comfort-amplifier-note" class="comfort-caption">Available at 100% screen warmth.</p>
+          </div>
+          <p id="warmth-state" class="comfort-caption" aria-live="polite">Reading warmth...</p>
+          <p id="warmth-preview-state" class="comfort-caption" hidden>Timeline preview. Saved warmth is unchanged.</p>
+        </div>
+      </section>
+      <section aria-labelledby="schedule-title" class="comfort-section">
+        <div class="comfort-section-heading"><div><h2 id="schedule-title">Schedule</h2><p id="comfort-next">Your local Windows time.</p></div></div>
+        <form id="comfort-form" class="comfort-section-body">
+          <div class="comfort-times comfort-location">
+            <label>Schedule type<select id="comfort-schedule-mode"><option value="fixed">Fixed hours</option><option value="solar">Sunrise and sunset</option></select></label>
+            <label>Time zone<input id="comfort-zone" maxlength="80" placeholder="System time zone" required></label>
+          </div>
+          <div id="comfort-solar" hidden>
+            <div class="comfort-times">
+              <label>Latitude<input id="comfort-latitude" type="number" min="-90" max="90" step="any"></label>
+              <label>Longitude<input id="comfort-longitude" type="number" min="-180" max="180" step="any"></label>
+              <label>Sunrise offset (min)<input id="comfort-day-offset" type="number" min="-120" max="120" value="0"></label>
+              <label>Sunset offset (min)<input id="comfort-evening-offset" type="number" min="-120" max="120" value="0"></label>
+            </div>
+            <button type="button" id="comfort-locate">Use my location</button>
+            <p id="comfort-location-status" class="comfort-caption" role="status">Coordinates stay in your local settings.</p>
+          </div>
+          <div class="comfort-timeline">
+            <div class="warmth-heading"><label for="comfort-scrub">Day timeline</label><output id="comfort-scrub-label" for="comfort-scrub" aria-live="off"></output></div>
+            <input id="comfort-scrub" type="range" min="0" max="1439" step="1" value="720" aria-describedby="comfort-solar-times">
+            <div class="warmth-endpoints"><span>Midnight</span><span>Noon</span><span>Midnight</span></div>
+            <p id="comfort-solar-times" class="comfort-caption"></p>
+            <div class="comfort-timeline-actions">
+              <label class="comfort-toggle"><span>Auto-play</span><span id="comfort-autoplay-label" aria-hidden="true">Off</span><input id="comfort-autoplay" type="checkbox" role="switch" aria-label="Auto-play day timeline" autocomplete="off" disabled><span class="comfort-switch" aria-hidden="true"></span></label>
+              <button type="button" id="comfort-now" disabled>Preview now</button>
+            </div>
+          </div>
+          <div class="comfort-times"><label for="comfort-day"><span id="comfort-day-label">Day starts</span><input id="comfort-day" type="time" required disabled></label><label for="comfort-evening"><span id="comfort-evening-label">Evening starts</span><input id="comfort-evening" type="time" required disabled></label></div>
+          <div class="comfort-save-row"><button type="submit" id="comfort-save" disabled>Save schedule</button><span id="schedule-state" class="comfort-caption" role="status">No unsaved changes</span></div>
+        </form>
+      </section>
+      <section class="comfort-recovery" id="comfort-recovery" aria-labelledby="recovery-title" hidden>
+        <h2 id="recovery-title">Status and recovery</h2><p id="recovery-message" role="alert"></p><button type="button" id="comfort-refresh">Check status</button>
+      </section>
+      <p id="comfort-feedback" class="comfort-feedback" role="status"></p>
+    </main>
+    <footer class="comfort-footer"><span>PC Control Plane</span></footer>
+  </div>
+</body>
+</html>

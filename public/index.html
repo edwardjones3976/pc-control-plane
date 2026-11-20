@@ -1,0 +1,390 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>PC Control Plane</title>
+    <link rel="stylesheet" href="/styles.css">
+  </head>
+  <body>
+    <div class="desktop-shell">
+      <header class="app-chrome">
+        <div class="chrome-left">
+          <span class="chrome-icon" title="Menu" aria-label="Menu">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+          </span>
+          <div class="app-mark" aria-hidden="true">
+            <svg viewBox="0 0 36 36"><path d="M3 18h6l3-8 5 17 4-12 3 6h9"/><circle cx="18" cy="18" r="16"/></svg>
+          </div>
+          <h1>PC Control Plane</h1>
+        </div>
+        <div class="chrome-right">
+          <span id="serviceStatus" class="service-pill" role="status"><i aria-hidden="true"></i>Connecting</span>
+          <span class="chrome-icon" title="Notifications" aria-label="Notifications">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/><path d="M10 21h4"/></svg>
+          </span>
+          <span class="chrome-icon" title="Settings" aria-label="Settings">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z"/><path d="M19 12a7 7 0 0 0-.1-1.1l2-1.5-2-3.4-2.4 1a7.4 7.4 0 0 0-1.9-1.1L14.2 3h-4.4l-.4 2.9A7.4 7.4 0 0 0 7.5 7l-2.4-1-2 3.4 2 1.5A7 7 0 0 0 5 12c0 .4 0 .8.1 1.1l-2 1.5 2 3.4 2.4-1a7.4 7.4 0 0 0 1.9 1.1l.4 2.9h4.4l.4-2.9a7.4 7.4 0 0 0 1.9-1.1l2.4 1 2-3.4-2-1.5c.1-.3.1-.7.1-1.1Z"/></svg>
+          </span>
+          <button id="systemMapButton" class="system-map-button" type="button" title="Open the system hierarchy map.">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v5"/><path d="M5 14v-3a3 3 0 0 1 3-3h8a3 3 0 0 1 3 3v3"/><rect x="3" y="14" width="4" height="4" rx="1"/><rect x="10" y="14" width="4" height="4" rx="1"/><rect x="17" y="14" width="4" height="4" rx="1"/></svg>
+            System Map
+          </button>
+
+          <a id="labLink" class="system-map-button" href="/lab" title="Open the Performance Lab: frame delivery, GPU thieves, interruptions, Hz/VRAM/drive checks, interrupt shepherding.">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 2v6.34L3.6 18a2 2 0 0 0 1.75 3h13.3a2 2 0 0 0 1.75-3L14.5 8.34V2"/><path d="M9 2h6"/><path d="M7.5 15h9"/></svg>
+            Performance Lab
+          </a>
+          <a class="system-map-button" href="/comfort">Desktop Comfort</a>
+          <span class="divider"></span>
+          <span class="window-button" aria-label="Minimize">–</span>
+          <span class="window-button" aria-label="Maximize">□</span>
+          <span class="window-button" aria-label="Close">×</span>
+        </div>
+      </header>
+
+      <div class="workspace">
+        <aside class="left-rail">
+          <section class="rail-block modes-block">
+            <h2>Modes</h2>
+            <div id="modeButtons" class="mode-list"></div>
+          </section>
+
+          <section class="rail-block controls-block">
+            <h2>Mode Controls</h2>
+            <div class="current-mode-box">
+              <div class="mode-box-top">
+                <span>Current Mode</span>
+                <b id="modeActiveChip">Active</b>
+              </div>
+              <strong id="leftCurrentMode">Loading</strong>
+              <span class="muted-label">Since</span>
+              <span id="modeSince">--</span>
+            </div>
+            <button id="restoreButton" class="control-button restore" type="button">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12a8 8 0 0 1 13.7-5.7L20 8"/><path d="M20 4v4h-4"/><path d="M20 12a8 8 0 0 1-13.7 5.7L4 16"/><path d="M4 20v-4h4"/></svg>
+              <span id="restoreButtonLabel">Restore All</span>
+            </button>
+            <button id="defaultModeButton" class="control-button default-mode" type="button" title="Return to the default Balanced mode immediately.">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m21 8-9-5-9 5 9 5 9-5Z"/><path d="M3 8v8l9 5 9-5V8"/><path d="M12 13v8"/></svg>
+              Default Mode
+            </button>
+            <button id="applySuggestedModeButton" class="control-button apply" type="button" title="Apply the selected or suggested mode immediately.">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
+              Apply Mode
+            </button>
+            <button id="releaseRamButton" class="control-button release-ram" type="button" title="Conservatively trim idle process working sets to free RAM. No process is suspended or stopped.">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="8" width="18" height="8" rx="1"/><path d="M7 8v8M12 8v8M17 8v8"/></svg>
+              <span id="releaseRamLabel">Release RAM</span>
+            </button>
+            <button id="relieveCpuButton" class="control-button relieve-cpu" type="button" title="Briefly cap the processor's peak clock to ease CPU heat/contention, then restore it. No process is suspended or stopped.">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="1"/><path d="M9 2v3M12 2v3M15 2v3M9 19v3M12 19v3M15 19v3M2 9h3M2 12h3M2 15h3M19 9h3M19 12h3M19 15h3"/></svg>
+              <span id="relieveCpuLabel">Soft CPU Relief</span>
+            </button>
+            <button id="networkDiagnoseButton" class="control-button network-diagnose" type="button" title="Refresh DNS, reachability, latency, packet-loss, VPN, adapter, and bandwidth-heavy app checks. Observe-only.">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12a7 7 0 0 1 14 0"/><path d="M8 15a4 4 0 0 1 8 0"/><path d="M12 19h.01"/><path d="M3 5c5.5-3 12.5-3 18 0"/></svg>
+              <span id="networkDiagnoseLabel">Network Diagnose</span>
+            </button>
+            <button id="relieveGpuButton" class="control-button relieve-gpu" type="button" title="Request a short in-mode power-band ease for GPU/VRAM pressure. No GPU clocks, fan, driver, firmware, or voltage setting is changed.">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="7" width="13" height="10" rx="1"/><path d="M17 10h3v4h-3M7 4v3M10 4v3M13 4v3M7 17v3M10 17v3M13 17v3"/><path d="M7 10h7v4H7z"/></svg>
+              <span id="relieveGpuLabel">GPU Relief</span>
+            </button>
+            <button id="stopActionsButton" class="control-button stop" type="button">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><rect x="9" y="9" width="6" height="6"/></svg>
+              Stop Active Actions
+            </button>
+          </section>
+          <footer class="rail-footer">
+            <span id="uptimeFooter">System Uptime: --</span>
+          </footer>
+        </aside>
+
+        <main class="main-stage">
+          <section class="summary-grid">
+            <article class="summary-card mode-summary">
+              <div class="summary-icon green">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 14h2l2-3 2 3h4"/><path d="M6 18h12a4 4 0 0 0 3.6-5.7l-1.3-3A5 5 0 0 0 15.7 6H8.3a5 5 0 0 0-4.6 3.3l-1.3 3A4 4 0 0 0 6 18Z"/><path d="M8 11h.01M16 11h.01"/></svg>
+              </div>
+              <div>
+                <span class="card-kicker">Current Mode</span>
+                <strong id="currentMode">Loading</strong>
+                <small id="activeProfile">Profile: --</small>
+              </div>
+            </article>
+            <article class="summary-card health-summary">
+              <div class="summary-icon green" id="healthIcon">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/><path d="m9 12 2 2 4-5"/></svg>
+              </div>
+              <div>
+                <span class="card-kicker">Health</span>
+                <strong id="healthText">--</strong>
+                <small id="healthReason">--</small>
+              </div>
+            </article>
+            <article class="summary-card priority-summary">
+              <div class="app-tile" id="priorityTile">PC</div>
+              <div>
+                <span class="card-kicker">Priority App</span>
+                <strong id="priorityLabel">--</strong>
+                <small id="priorityReason">--</small>
+
+                <div class="game-correct" id="gameCorrect" hidden>
+                  <span id="gameCorrectText"></span>
+                  <button type="button" class="link-button" id="gameMarkNot">Not a game</button>
+                  <button type="button" class="link-button" id="gameMarkIs">It's a game</button>
+                </div>
+              </div>
+            </article>
+          </section>
+
+
+
+          <section class="dashboard-panel why-panel nonessential-panel" aria-hidden="true" aria-label="Why the governor chose this">
+            <div class="panel-title-row">
+              <div class="title-with-live">
+                <h2>Why</h2>
+                <span id="whyHeadline" class="why-headline">--</span>
+              </div>
+              <div class="why-actions">
+                <span id="overdriveCountdown" class="overdrive-countdown" hidden></span>
+                <button id="simulateButton" class="mini-button wide" type="button">What if?</button>
+              </div>
+            </div>
+            <p id="whySummary" class="why-summary">Waiting for the first decision.</p>
+            <div class="why-grid">
+              <article>
+                <h3 class="why-sub">Holding it here</h3>
+                <div id="whyHolds" class="why-list"></div>
+              </article>
+              <article>
+                <h3 class="why-sub">What would change it</h3>
+                <div id="whyTriggers" class="why-list"></div>
+              </article>
+            </div>
+            <div id="whySimulation" class="why-simulation" hidden></div>
+          </section>
+
+          <section class="dashboard-panel autonomy-cockpit" aria-label="Autonomy cockpit">
+            <div class="panel-title-row autonomy-header">
+              <div class="title-with-live">
+                <h2>Autonomy</h2>
+                <span id="autonomySummary" class="autonomy-summary">Loop initializing</span>
+              </div>
+              <div id="viewModeToggle" class="segmented-control" role="group" aria-label="Display mode">
+                <button type="button" data-view-mode="cockpit" aria-pressed="true">Cockpit</button>
+                <button type="button" data-view-mode="summary" aria-pressed="false">Summary</button>
+              </div>
+            </div>
+            <div id="autonomyLoop" class="autonomy-loop"></div>
+            <div class="autonomy-detail-grid">
+              <article class="autonomy-panel">
+                <h3>ML / Learner</h3>
+                <div id="mlLearnerPanel" class="autonomy-card-list"></div>
+              </article>
+              <article class="autonomy-panel power-band-panel">
+                <h3>Power Band</h3>
+                <div id="powerBandPanel" class="autonomy-card-list"></div>
+              </article>
+              <article class="autonomy-panel">
+                <h3>Sensor Readiness</h3>
+                <div id="sensorReadinessPanel" class="sensor-readiness-grid"></div>
+              </article>
+              <article class="autonomy-panel">
+                <h3>Relief Readiness</h3>
+                <div id="reliefReadinessPanel" class="autonomy-card-list"></div>
+              </article>
+              <article class="autonomy-panel">
+                <h3>Autonomous Actions</h3>
+                <div id="actionTimelinePanel" class="autonomy-timeline"></div>
+              </article>
+              <article class="autonomy-panel">
+                <h3>Failure Layers</h3>
+                <div id="failureGroupsPanel" class="failure-groups"></div>
+              </article>
+            </div>
+          </section>
+
+          <section class="dashboard-panel telemetry-section">
+            <div class="panel-title-row">
+              <div class="title-with-live">
+                <h2>Telemetry</h2>
+                <span id="telemetryFreshness" class="live-dot"><i aria-hidden="true"></i>Waiting</span>
+              </div>
+              <span id="captureTime">Last Updated: --</span>
+            </div>
+            <div id="connectionNotice" class="connection-notice" hidden>
+              <span id="connectionMessage" role="status"></span>
+              <button id="connectionRetry" type="button" hidden>Retry connection</button>
+            </div>
+            <div id="telemetryGrid" class="telemetry-grid"></div>
+
+            <div id="hardwareProfileRow" class="hardware-profile-row" aria-label="Current PC hardware profile"></div>
+            <div id="fanTelemetryRow" class="fan-telemetry-row" aria-label="Fan telemetry"></div>
+          </section>
+
+          <section class="dashboard-panel network-meter-panel" aria-label="Network quality meter">
+            <div id="networkMeter"></div>
+          </section>
+
+          <section class="essential-layout nonessential-panel" aria-label="User essential boxes" aria-hidden="true">
+            <article class="dashboard-panel essential-panel">
+              <h2>System Focus</h2>
+              <div id="essentialFocus" class="essential-list"></div>
+            </article>
+            <article class="dashboard-panel essential-panel">
+              <h2>Needs Attention</h2>
+              <div id="essentialAttention" class="essential-list"></div>
+            </article>
+            <article class="dashboard-panel essential-panel">
+              <h2>Competitive Gaming Readiness</h2>
+              <div id="essentialWorkload" class="essential-list"></div>
+            </article>
+            <article class="dashboard-panel essential-panel">
+              <h2>Safety / Recovery</h2>
+              <div id="essentialSafety" class="essential-list"></div>
+            </article>
+          </section>
+
+          <section class="policy-region">
+            <h2 class="region-title">Policy</h2>
+            <div class="policy-layout">
+              <article class="dashboard-panel">
+                <h2>Active Policies</h2>
+                <div id="activePolicies" class="policy-list"></div>
+              </article>
+              <article class="dashboard-panel">
+                <div class="panel-title-row tight-row">
+                  <h2>Active Actions <span id="actionCount">(0)</span></h2>
+                </div>
+                <div id="activeActions" class="action-list"></div>
+              </article>
+              <article class="dashboard-panel failure-panel">
+                <h2>Failure Watch</h2>
+                <div id="failureWatchList" class="failure-watch-list"></div>
+              </article>
+            </div>
+          </section>
+
+          <section class="table-layout">
+            <article class="dashboard-panel table-panel">
+              <div class="table-title">
+                <h2>Top Offenders</h2>
+                <span>(If Unchecked)</span>
+              </div>
+              <table>
+                <thead>
+                  <tr>
+                    <th>Process</th>
+                    <th>CPU</th>
+                    <th>RAM</th>
+                    <th>Impact</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody id="offenderRows"></tbody>
+              </table>
+              <div id="offenderFooter"></div>
+            </article>
+            <article class="dashboard-panel table-panel">
+              <h2>Protected / Always Allow</h2>
+              <table>
+                <thead>
+                  <tr>
+                    <th>Process</th>
+                    <th>Type</th>
+                    <th>Reason</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody id="protectedRows"></tbody>
+              </table>
+              <span id="protectedSummary" class="table-footer-note">Protected rules loading</span>
+            </article>
+          </section>
+
+          <section class="v2-layout nonessential-panel" aria-hidden="true">
+            <article class="dashboard-panel v2-panel dry-run-panel">
+              <div class="panel-title-row tight-row">
+                <h2>Dry Run Diff</h2>
+                <button id="applyPlanButton" class="mini-button wide" type="button">Apply Plan</button>
+              </div>
+              <div id="dryRunDiff" class="diff-list"></div>
+            </article>
+            <article class="dashboard-panel v2-panel">
+              <div class="panel-title-row tight-row">
+                <h2>Flight Recorder</h2>
+                <button id="stressButton" class="mini-button wide" type="button">Stress</button>
+              </div>
+              <div id="flightRecorder" class="compact-list"></div>
+            </article>
+            <article class="dashboard-panel v2-panel">
+              <h2>Adapter Health</h2>
+              <div id="adapterHealth" class="compact-list"></div>
+            </article>
+            <article class="dashboard-panel v2-panel">
+              <h2>Session History</h2>
+              <div id="sessionHistory" class="compact-list"></div>
+            </article>
+            <article class="dashboard-panel v2-panel">
+              <h2>Drift</h2>
+              <div id="driftPanel" class="compact-list"></div>
+            </article>
+          </section>
+        </main>
+
+        <aside class="right-rail">
+          <section class="audit-shell">
+            <h2>Audit Trail</h2>
+            <div class="audit-filter-row">
+              <select id="auditFilter" aria-label="Audit filter">
+                <option>Important</option>
+                <option>All</option>
+                <option>Actions</option>
+                <option>Warnings</option>
+              </select>
+              <button id="clearAuditButton" type="button">Clear</button>
+            </div>
+            <div id="auditCategoryChips" class="audit-chips" role="group" aria-label="Filter audit by category"></div>
+            <div id="auditRetentionNote" class="audit-retention"></div>
+            <div id="auditGroups" class="audit-groups"></div>
+            <button id="exportLogButton" class="export-button" type="button">Export Log</button>
+          </section>
+        </aside>
+      </div>
+
+      <footer class="status-footer">
+        <span></span>
+        <span id="activeProfileFooter">Active Profile: --</span>
+        <span id="appVersionFooter">v0.8.0 <i></i></span>
+      </footer>
+    </div>
+
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+    <div id="systemMapOverlay" class="system-map-overlay" hidden>
+      <section class="system-map-dialog" role="dialog" aria-modal="true" aria-labelledby="systemMapTitle">
+        <header class="system-map-header">
+          <div>
+            <span class="card-kicker">Architecture</span>
+            <h2 id="systemMapTitle">System Map</h2>
+          </div>
+          <button id="systemMapClose" class="mini-button" type="button" aria-label="Close System Map">Close</button>
+        </header>
+        <div id="systemMapContent" class="system-map-content">
+          <div class="system-map-loading">Loading system map...</div>
+        </div>
+      </section>
+    </div>
+
+    <div id="supersededOverlay" class="superseded-overlay" role="alertdialog" aria-modal="true" aria-labelledby="supersededTitle" hidden>
+      <div class="superseded-card">
+        <h2 id="supersededTitle">Window inactive</h2>
+        <p class="superseded-msg">A newer window opened and took control. This window is now inactive.</p>
+        <p class="superseded-sub">Only the newest window controls the PC Control Plane. Refresh this window to take control.</p>
+        <button id="supersededRefresh" class="control-button apply" type="button">Refresh to take control</button>
+      </div>
+    </div>
+
+    <script type="module" src="/app.js"></script>
+  </body>
+</html>

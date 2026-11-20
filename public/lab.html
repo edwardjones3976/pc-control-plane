@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>PC Control Plane — Performance Lab</title>
+  <link rel="stylesheet" href="/styles.css" />
+  <style>
+    /* Lab-local layout only; palette and components come from styles.css. */
+    .lab-shell { max-width: 1180px; margin: 0 auto; padding: 18px 22px 60px; }
+    .lab-head { display: flex; align-items: baseline; gap: 14px; margin-bottom: 4px; }
+    .lab-head h1 { font-size: 20px; margin: 0; }
+    .lab-head a { font-size: 12px; opacity: 0.75; }
+    .lab-sub { font-size: 12px; opacity: 0.65; margin: 0 0 18px; }
+    .lab-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 14px; }
+    .lab-card { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.07); border-radius: 8px; padding: 14px 16px; }
+    .lab-card h2 { font-size: 13px; margin: 0 0 4px; letter-spacing: 0.4px; text-transform: uppercase; opacity: 0.85; }
+    .lab-card p.hint { font-size: 11.5px; opacity: 0.6; margin: 0 0 10px; line-height: 1.45; }
+    .lab-card button { background: rgba(79,195,247,0.12); color: var(--accent, #4fc3f7); border: 1px solid rgba(79,195,247,0.35); border-radius: 8px; padding: 6px 12px; font: inherit; font-size: 12px; cursor: pointer; }
+    .lab-card button:hover { background: rgba(79,195,247,0.22); }
+    .lab-card button[disabled] { opacity: 0.4; cursor: wait; }
+    .lab-out { margin-top: 10px; font-size: 12px; line-height: 1.5; white-space: pre-wrap; word-break: break-word; opacity: 0.9; max-height: 300px; overflow: auto; }
+    .lab-out .warn { color: #ffb74d; }
+    .lab-out .bad { color: #ef5350; }
+    .lab-out .good { color: #81c784; }
+    .lab-row { display: flex; justify-content: space-between; gap: 10px; padding: 3px 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
+    .lab-row small { opacity: 0.6; }
+    .cage-btn { margin-left: 8px; padding: 2px 8px !important; font-size: 11px !important; }
+    .mouse-card { grid-column: 1 / -1; }
+    .mouse-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 2px 0 12px; }
+    .mouse-device { min-width: 0; font-size: 12px; font-weight: 700; color: #dce7ed; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .mouse-runtime { flex: 0 0 auto; padding: 3px 8px; border: 1px solid rgba(129,199,132,0.35); border-radius: 999px; color: #81c784; font-size: 10.5px; }
+    .mouse-controls { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+    .mouse-control { min-width: 0; }
+    .mouse-control label { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin-bottom: 7px; font-size: 12px; color: #dce7ed; }
+    .mouse-control output { color: var(--accent, #4fc3f7); font-weight: 800; white-space: nowrap; }
+    .mouse-control input[type="range"] { width: 100%; margin: 0; accent-color: var(--accent, #4fc3f7); cursor: pointer; }
+    .mouse-control input[type="range"]:disabled { cursor: not-allowed; opacity: 0.45; }
+    .mouse-scale { display: flex; justify-content: space-between; margin-top: 4px; color: rgba(220,231,237,0.52); font-size: 10px; }
+    .mouse-options { display: flex; align-items: center; justify-content: space-between; gap: 14px; margin-top: 14px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.07); }
+    .mouse-toggle { display: inline-flex; align-items: center; gap: 8px; color: #dce7ed; font-size: 12px; cursor: pointer; }
+    .mouse-toggle input { accent-color: var(--accent, #4fc3f7); }
+    .mouse-actions { display: flex; align-items: center; justify-content: flex-end; gap: 8px; flex-wrap: wrap; }
+    .mouse-actions .primary { background: rgba(79,195,247,0.22); border-color: rgba(79,195,247,0.65); font-weight: 800; }
+    .mouse-status { min-height: 19px; margin-top: 9px; font-size: 11.5px; line-height: 1.45; color: rgba(220,231,237,0.72); }
+    @media (max-width: 760px) {
+      .lab-shell { padding-inline: 12px; }
+      .lab-grid { grid-template-columns: 1fr; }
+      .mouse-controls { grid-template-columns: 1fr; }
+      .mouse-options { align-items: flex-start; flex-direction: column; }
+      .mouse-actions { justify-content: flex-start; }
+    }
+  </style>
+</head>
+<body>
+  <div class="lab-shell">
+    <div class="lab-head">
+      <h1>Performance Lab</h1>
+      <a href="/">&larr; back to control plane</a>
+      <a href="/comfort">Desktop Comfort</a>
+    </div>
+    <p class="lab-sub">On-demand local tools. Measurements run only when requested; controls change only the setting you explicitly apply and keep a restore path.</p>
+    <div class="lab-grid">
+
+
+      <section class="lab-card">
+        <h2>Network Recovery</h2>
+        <label for="recovery-adapter">Physical network adapter</label>
+        <select id="recovery-adapter" disabled><option value="">Select an adapter</option></select>
+        <button id="recovery-refresh">Refresh adapters</button>
+        <button id="recovery-restart" disabled>Restart adapter</button>
+        <p class="lab-out" id="out-recovery" role="status"></p>
+        <details>
+          <summary>Windows Network Reset (last resort)</summary>
+          <p>Windows resets network settings and restarts the PC. VPNs and virtual adapters may need reconfiguration. Opening Settings does not reset anything.</p>
+          <a href="ms-settings:network-advancedsettings">Open Windows Settings</a>
+          <p>In Settings, choose Network reset. Windows asks for final confirmation.</p>
+        </details>
+      </section>
+
+
+      <div class="lab-card mouse-card" id="mouse-card">
+        <h2>Mouse Tuning</h2>
+        <p class="hint">Quick local adjustments for the connected gaming mouse. Dragging is preview-only; Apply makes one short local call, then the helper exits.</p>
+        <div class="mouse-head">
+          <div class="mouse-device" id="mouse-device">Detecting mouse...</div>
+          <div class="mouse-runtime">No background process</div>
+        </div>
+        <div class="mouse-controls">
+          <div class="mouse-control">
+            <label for="mouse-polling">Polling rate <output id="mouse-polling-value">--</output></label>
+            <input id="mouse-polling" type="range" min="0" max="3" step="1" value="3" disabled />
+            <div class="mouse-scale"><span>125 Hz</span><span>1000 Hz</span></div>
+          </div>
+          <div class="mouse-control">
+            <label for="mouse-dpi">Movement (DPI) <output id="mouse-dpi-value">--</output></label>
+            <input id="mouse-dpi" type="range" min="100" max="25600" step="50" value="6400" disabled />
+            <div class="mouse-scale"><span>100</span><span>25,600</span></div>
+          </div>
+          <div class="mouse-control">
+            <label for="mouse-speed">Windows pointer speed <output id="mouse-speed-value">--</output></label>
+            <input id="mouse-speed" type="range" min="1" max="20" step="1" value="10" disabled />
+            <div class="mouse-scale"><span>Slow</span><span>Fast</span></div>
+          </div>
+        </div>
+        <div class="mouse-options">
+          <label class="mouse-toggle" for="mouse-acceleration">
+            <input id="mouse-acceleration" type="checkbox" disabled />
+            Pointer acceleration
+          </label>
+          <div class="mouse-actions">
+            <button id="mouse-refresh" type="button">Re-read</button>
+            <button id="mouse-restore" type="button">Restore saved</button>
+            <button id="mouse-apply" class="primary" type="button">Apply settings</button>
+          </div>
+        </div>
+        <div class="mouse-status" id="mouse-status" role="status" aria-live="polite">Reading the local mouse...</div>
+      </div>
+
+      <div class="lab-card">
+        <h2>Frame Delivery</h2>
+        <p class="hint">How frames actually reach the screen. Composed Flip = the compositor is adding ~1 frame of latency (borderless done wrong). With Reflex titles, also shows measured click-to-photon input latency. Run while a game or video is on screen.</p>
+        <button data-run="frames">Measure (6s capture)</button>
+        <div class="lab-out" id="out-frames"></div>
+      </div>
+
+      <div class="lab-card">
+        <h2>GPU Thieves</h2>
+        <p class="hint">Per-process 3D-engine usage — who is rendering besides your game. Wallpaper engines, overlay replays, and forgotten browser tabs show up here. Takes ~2s.</p>
+        <button data-run="gpu-thieves">Name the thieves</button>
+        <div class="lab-out" id="out-gpu-thieves"></div>
+      </div>
+
+      <div class="lab-card">
+        <h2>Interruptions</h2>
+        <p class="hint">Focus-steal forensics: every window that took the foreground during a competitive session, with its process. Eco-cage a repeat offender to throttle it in the background without killing it.</p>
+        <button data-run="interruptions">Who interrupted me?</button>
+        <div class="lab-out" id="out-interruptions"></div>
+      </div>
+
+      <div class="lab-card">
+        <h2>Refresh-Rate Guard</h2>
+        <p class="hint">Panels silently fall back to 60 Hz after driver updates and cable re-plugs. Checks every display's current Hz against its panel maximum at the current resolution.</p>
+        <button data-run="hz-check">Check displays</button>
+        <div class="lab-out" id="out-hz-check"></div>
+      </div>
+
+      <div class="lab-card">
+        <h2>VRAM Headroom</h2>
+        <p class="hint">VRAM eviction is stutter. Names the processes holding dedicated VRAM and how much headroom the 12&nbsp;GB card has left.</p>
+        <button data-run="vram">Check VRAM</button>
+        <div class="lab-out" id="out-vram"></div>
+      </div>
+
+      <div class="lab-card">
+        <h2>Install Locality</h2>
+        <p class="hint">Benchmarks each drive's real read speed and maps which titles live where — a heavy title on the slowest drive costs load time every day. Takes up to a minute.</p>
+        <button data-run="drive-bench">Benchmark drives</button>
+        <div class="lab-out" id="out-drive-bench"></div>
+      </div>
+
+      <div class="lab-card">
+        <h2>Interrupt Shepherding</h2>
+        <p class="hint">Steers NIC interrupts to the top CPU cores, away from core 0's kernel DPC traffic and the cores your game's threads favor. GPU stays on MSI-X defaults deliberately. Apply restarts the adapter (~2s blip) and is refused while a game is live. Fully revertible.</p>
+        <button data-run="irq">Audit</button>
+        <button data-irq-action="apply">Apply</button>
+        <button data-irq-action="revert">Revert</button>
+        <div class="lab-out" id="out-irq"></div>
+      </div>
+
+    </div>
+  </div>
+  <script type="module">
+    import { createControlClient } from "./control-client.js";
+    const esc = (value) => String(value ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+    const out = (id) => document.getElementById("out-" + id);
+
+    const call = createControlClient();
+
+    const adapter = document.getElementById("recovery-adapter");
+    const refreshAdapters = document.getElementById("recovery-refresh");
+    const restartAdapter = document.getElementById("recovery-restart");
+    adapter.addEventListener("change", () => { restartAdapter.disabled = !adapter.value; });
+    refreshAdapters.addEventListener("click", async () => {
+      refreshAdapters.disabled = adapter.disabled = restartAdapter.disabled = true;
+      adapter.replaceChildren(new Option("Select an adapter", ""));
+      out("recovery").textContent = "Reading adapters...";
+      try {
+        const result = await call("/api/lab/network-adapters");
+        for (const item of result.adapters || []) {
+          const option = new Option(item.name + " (" + item.status + ")", item.id);
+          option.disabled = item.status === "Disabled";
+          adapter.add(option);
+        }
+        adapter.disabled = !result.adapters?.length;
+        out("recovery").textContent = result.message || (adapter.disabled ? "No supported adapters found." : "");
+      } catch { out("recovery").textContent = "Adapter status unavailable."; }
+      finally { refreshAdapters.disabled = false; }
+    });
+    restartAdapter.addEventListener("click", async () => {
+      const id = adapter.value;
+      if (!id || !confirm("Restart " + adapter.selectedOptions[0].textContent + "? This temporarily disconnects its network traffic.")) return;
+      refreshAdapters.disabled = adapter.disabled = restartAdapter.disabled = true;
+      out("recovery").textContent = "Restarting and checking the connection...";
+      try {
+        const result = await call("/api/lab/restart-adapter", {
+          method: "POST", body: JSON.stringify({ id, confirmed: true })
+        });
+        out("recovery").textContent = result.message;
+      } catch { out("recovery").textContent = "Restart result unverified. Refresh adapters before retrying."; }
+      finally { refreshAdapters.disabled = false; }
+    });
+
+    const mouseUi = {
+      status: null,
+      pollingRates: [125, 250, 500, 1000],
+      controls: {
+        polling: document.getElementById("mouse-polling"),
+        dpi: document.getElementById("mouse-dpi"),
+        speed: document.getElementById("mouse-speed"),
+        acceleration: document.getElementById("mouse-acceleration"),
+        apply: document.getElementById("mouse-apply"),
+        restore: document.getElementById("mouse-restore"),
+        refresh: document.getElementById("mouse-refresh")
+      }
+    };
+
+    function mouseSetBusy(busy) {
+      mouseUi.controls.apply.disabled = busy || !mouseUi.status?.ok;
+      mouseUi.controls.restore.disabled = busy || !mouseUi.status?.restore?.available;
+      mouseUi.controls.refresh.disabled = busy;
+    }
+
+    function mouseMessage(message, tone = "") {
+      const el = document.getElementById("mouse-status");
+      el.className = `mouse-status ${tone}`.trim();
+      el.textContent = message;
+    }
+
+    function updateMouseLabels() {
+      const pollingIndex = Number(mouseUi.controls.polling.value);
+      document.getElementById("mouse-polling-value").textContent = `${mouseUi.pollingRates[pollingIndex] || "--"} Hz`;
+      document.getElementById("mouse-dpi-value").textContent = `${Number(mouseUi.controls.dpi.value).toLocaleString()} DPI`;
+      document.getElementById("mouse-speed-value").textContent = `${mouseUi.controls.speed.value} / 20`;
+    }
+
+    function renderMouseStatus(r) {
+      mouseUi.status = r;
+      if (!r?.ok) {
+        document.getElementById("mouse-device").textContent = "Mouse controls unavailable";
+        mouseMessage(r?.message || "The local mouse could not be read.", "bad");
+        mouseSetBusy(false);
+        return;
+      }
+      document.getElementById("mouse-device").textContent = `${r.device?.name || "Gaming mouse"} - ${r.device?.status || "connected"}`;
+      const rates = Array.isArray(r.polling?.supportedHz) && r.polling.supportedHz.length
+        ? r.polling.supportedHz.map(Number).sort((a, b) => a - b)
+        : [125, 250, 500, 1000];
+      mouseUi.pollingRates = rates;
+      mouseUi.controls.polling.max = String(Math.max(0, rates.length - 1));
+      mouseUi.controls.polling.value = String(Math.max(0, rates.indexOf(Number(r.polling?.currentHz))));
+      mouseUi.controls.polling.disabled = !r.polling?.available;
+
+      mouseUi.controls.dpi.min = String(r.dpi?.min || 100);
+      mouseUi.controls.dpi.max = String(r.dpi?.max || 25600);
+      mouseUi.controls.dpi.step = String(r.dpi?.step || 50);
+      mouseUi.controls.dpi.value = String(r.dpi?.current || 6400);
+      mouseUi.controls.dpi.disabled = !r.dpi?.available;
+
+      mouseUi.controls.speed.value = String(r.movement?.pointerSpeed || 10);
+      mouseUi.controls.speed.disabled = false;
+      mouseUi.controls.acceleration.checked = r.movement?.acceleration === true;
+      mouseUi.controls.acceleration.disabled = false;
+      updateMouseLabels();
+
+      const modeNote = r.polling?.profileMode === "onboard"
+        ? "Device memory is active. A changed polling rate uses live hardware control; Restore returns to device memory."
+        : "Live hardware control is active. Restore returns to the saved device-memory profile.";
+      mouseMessage(modeNote, r.polling?.profileMode === "onboard" ? "" : "good");
+      mouseSetBusy(false);
+    }
+
+    async function loadMouseControls() {
+      mouseSetBusy(true);
+      mouseMessage("Reading the local mouse...");
+      try {
+        renderMouseStatus(await call("/api/lab/mouse"));
+      } catch (error) {
+        renderMouseStatus({ ok: false, message: error.message });
+      }
+    }
+
+    [mouseUi.controls.polling, mouseUi.controls.dpi, mouseUi.controls.speed].forEach((control) => {
+      control.addEventListener("input", updateMouseLabels);
+    });
+
+    mouseUi.controls.apply.addEventListener("click", async () => {
+      const pollingHz = mouseUi.pollingRates[Number(mouseUi.controls.polling.value)];
+      const pollingChanged = Number(pollingHz) !== Number(mouseUi.status?.polling?.currentHz);
+      const needsLiveControl = pollingChanged && mouseUi.status?.polling?.profileMode === "onboard";
+      const payload = {};
+      if (pollingChanged && !mouseUi.controls.polling.disabled) {
+        payload.pollingHz = Number(pollingHz);
+        payload.liveControl = needsLiveControl;
+      }
+      const dpi = Number(mouseUi.controls.dpi.value);
+      if (!mouseUi.controls.dpi.disabled && dpi !== Number(mouseUi.status?.dpi?.current)) payload.dpi = dpi;
+      const pointerSpeed = Number(mouseUi.controls.speed.value);
+      if (pointerSpeed !== Number(mouseUi.status?.movement?.pointerSpeed)) payload.pointerSpeed = pointerSpeed;
+      const acceleration = mouseUi.controls.acceleration.checked;
+      if (acceleration !== (mouseUi.status?.movement?.acceleration === true)) payload.acceleration = acceleration;
+      if (!Object.keys(payload).length) {
+        mouseMessage("These settings already match the mouse.", "good");
+        return;
+      }
+      if (needsLiveControl && !confirm("Changing report rate will temporarily use lightweight live control instead of the mouse's onboard profile. Restore Saved returns to device memory. Continue?")) return;
+      mouseSetBusy(true);
+      mouseMessage("Applying once...");
+      try {
+        const result = await call("/api/lab/mouse/apply", {
+          method: "POST",
+          body: JSON.stringify(payload)
+        });
+        if (!result.ok) throw new Error(result.message || "Mouse settings were not applied.");
+        renderMouseStatus(result);
+        mouseMessage(result.message || "Mouse settings applied.", "good");
+      } catch (error) {
+        mouseMessage(error.message, "bad");
+        mouseSetBusy(false);
+      }
+    });
+
+    mouseUi.controls.restore.addEventListener("click", async () => {
+      mouseSetBusy(true);
+      mouseMessage("Restoring the saved baseline...");
+      try {
+        const result = await call("/api/lab/mouse/restore", { method: "POST", body: "{}" });
+        if (!result.ok) throw new Error(result.message || "The saved baseline could not be restored.");
+        renderMouseStatus(result);
+        mouseMessage(result.message, "good");
+      } catch (error) {
+        mouseMessage(error.message, "bad");
+        mouseSetBusy(false);
+      }
+    });
+
+    mouseUi.controls.refresh.addEventListener("click", loadMouseControls);
+
+    const renderers = {
+      frames(r) {
+        if (!r.ok) return `<span class="warn">${esc(r.error || r.note)}</span>`;
+        const s = r.stats || {};
+        const d = r.delivery || {};
+        let html = `Target: <b>${esc(r.target)}</b>\n`;
+        if (s.available) html += `Avg ${s.avgFps} fps · 1% low ${s.p1LowFps} · 0.1% low ${s.p01LowFps} · ${s.stutterCount} stutters (${(s.stutterRatio * 100).toFixed(1)}%)\n`;
+        if (d.dominantMode) html += `\nDelivery: <b>${esc(d.dominantMode)}</b> (${d.dominantSharePct}% of frames)\n<span class="${d.composedFlip ? "warn" : "good"}">${esc(d.flipAdvice)}</span>\n`;
+        if (d.clickToPhoton) html += `\nClick-to-photon: median <b>${d.clickToPhoton.medianMs} ms</b>, p95 ${d.clickToPhoton.p95Ms} ms (${d.clickToPhoton.samples} samples)`;
+        else html += `\n<small>No Reflex latency markers in this capture — click-to-photon needs a Reflex-enabled title.</small>`;
+        return html;
+      },
+      "gpu-thieves"(r) {
+        if (!r.ok) return `<span class="warn">${esc(r.error)}</span>`;
+        let html = r.game ? `<span class="good">Game: ${esc(r.game.name)} — ${r.game.gpu3dPct}% 3D</span>\n` : "";
+        if (!r.thieves.length) return html + `<span class="good">No other process is using the 3D engine. Clean.</span>`;
+        for (const t of r.thieves) html += `<div class="lab-row"><span>${esc(t.name || "pid " + t.pid)}</span><span class="warn">${t.gpu3dPct}% 3D</span></div>`;
+        return html;
+      },
+      interruptions(r) {
+        if (!r.steals.length) return esc(r.note);
+        let html = "";
+        for (const s of r.steals.slice().reverse()) {
+          if (s.isGame) continue;
+          html += `<div class="lab-row"><span>${esc(s.name || "?")} <small>${esc((s.title || "").slice(0, 40))}</small></span>` +
+            `<span><small>${esc((s.at || "").slice(11, 19))} UTC</small>` +
+            `<button class="cage-btn" data-cage-pid="${Number(s.pid)}" data-cage-name="${esc(s.name)}">Eco-cage</button></span></div>`;
+        }
+        return html || `<span class="good">Only the game held focus. No interruptions.</span>`;
+      },
+      "hz-check"(r) {
+        let html = `<span class="${r.displays.some((d) => d.concern) ? "bad" : "good"}">${esc(r.summary)}</span>\n`;
+        for (const d of r.displays || []) {
+          const tone = d.concern ? "bad" : d.mismatch ? "" : "good";
+          const tag = d.gamingDisplay ? " (gaming)" : d.mismatch ? " (secondary — deliberate)" : "";
+          html += `<div class="lab-row"><span>${esc(d.device)}${d.primary ? " (primary)" : ""}${tag} ${d.width}x${d.height}</span><span class="${tone}">${d.currentHz} Hz / max ${d.maxHz} Hz</span></div>`;
+        }
+        return html;
+      },
+      vram(r) {
+        if (!r.ok) return `<span class="warn">GPU process counters unavailable.</span>`;
+        let html = r.totalMB ? `Used ${r.usedMB} / ${r.totalMB} MB — headroom <b>${r.headroomMB} MB</b>\n` : "";
+        if (r.warning) html += `<span class="bad">${esc(r.warning)}</span>\n`;
+        for (const c of r.consumers || []) {
+          html += `<div class="lab-row"><span>${esc(c.name || "pid " + c.pid)}${c.isGame ? " <small>(the game)</small>" : ""}</span><span>${c.vramMB} MB</span></div>`;
+        }
+        return html;
+      },
+      irq(r) {
+        if (!r.ok) return `<span class="warn">${esc(r.error)}</span>`;
+        let html = `Logical processors: ${r.logicalProcessors} · plan: steer NIC to cores ${esc((r.plan?.cores || []).join("+"))} (${esc(r.plan?.maskHex)})\n`;
+        html += r.applied ? `<span class="good">APPLIED ${esc(r.applied.at)} on ${esc(r.applied.adapterName)} (cores ${esc((r.applied.cores || []).join("+"))})</span>\n` : `<span>Not currently applied.</span>\n`;
+        if (r.nic) html += `<div class="lab-row"><span>NIC ${esc(r.nic.adapterName)} <small>${esc(r.nic.linkSpeed)}</small></span><span>MSI=${esc(r.nic.irq?.msiSupported ?? "?")} policy=${esc(r.nic.irq?.devicePolicy ?? "default")}</span></div>`;
+        for (const g of r.gpu || []) html += `<div class="lab-row"><span>GPU ${esc(g.name)}</span><span>MSI=${esc(g.irq?.msiSupported ?? "?")} <small>(left on MSI-X defaults)</small></span></div>`;
+        return html + `\n<small>${esc(r.gpuNote)}</small>`;
+      },
+      "drive-bench"(r) {
+        if (!r.ok) return `<span class="warn">No drives benchmarked.</span>`;
+        let html = "";
+        for (const d of r.drives) {
+          html += d.ok
+            ? `<div class="lab-row"><span>Drive ${esc(d.drive)}:</span><span>${d.seqReadMBps} MB/s seq · ${d.randReadIOPS} IOPS <small>${esc((r.titlesByDrive[d.drive] || []).length + " title(s)")}</small></span></div>`
+            : `<div class="lab-row"><span>Drive ${esc(d.drive)}:</span><span class="warn">${esc(d.note)}</span></div>`;
+        }
+        for (const a of r.advice || []) html += `\n<span class="warn">${esc(a)}</span>`;
+        if (!(r.advice || []).length) html += `\n<span class="good">No title sits on a drive that is clearly wrong for it.</span>`;
+        return html;
+      }
+    };
+
+    const endpoints = {
+      frames: ["/api/lab/frames", { method: "POST", body: "{}" }],
+      "gpu-thieves": ["/api/lab/gpu-thieves", { method: "POST", body: "{}" }],
+      interruptions: ["/api/lab/interruptions", {}],
+      "hz-check": ["/api/lab/hz-check", { method: "POST", body: "{}" }],
+      vram: ["/api/lab/vram", { method: "POST", body: "{}" }],
+      "drive-bench": ["/api/lab/drive-bench", { method: "POST", body: "{}" }],
+      irq: ["/api/lab/irq", {}]
+    };
+
+    document.querySelectorAll("button[data-run]").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        const id = btn.dataset.run;
+        btn.disabled = true;
+        out(id).textContent = "Measuring…";
+        try {
+          const [path, opts] = endpoints[id];
+          out(id).innerHTML = renderers[id](await call(path, opts));
+        } catch (error) {
+          out(id).innerHTML = `<span class="bad">${esc(error.message)}</span>`;
+        } finally {
+          btn.disabled = false;
+        }
+      });
+    });
+
+    const irqAct = async (which) => {
+      if (which === "apply" && !confirm("Steer NIC interrupts to the top cores? The adapter restarts (~2s network blip). Refused automatically while a game is live.")) return;
+      const el = out("irq");
+      el.textContent = "Working\u2026";
+      try {
+        const r = await call("/api/lab/irq/" + which, { method: "POST", body: "{}" });
+        el.innerHTML = r.ok
+          ? `<span class="good">${which === "apply" ? `Applied: ${esc(r.adapterName)} \u2192 cores ${esc((r.steeredToCores || []).join("+"))} (${esc(r.maskHex)}). Adapter ${esc(r.adapterStatus)}, internet ${r.internetOk ? "verified" : "NOT verified"}.` : `Reverted on ${esc(r.adapterName)}.`}</span>`
+          : `<span class="bad">${esc(r.error)}</span>`;
+      } catch (error) { el.innerHTML = `<span class="bad">${esc(error.message)}</span>`; }
+    };
+    const cage = async (pid, name) => {
+      try {
+        const r = await call("/api/lab/eco-cage", { method: "POST", body: JSON.stringify({ pid, name }) });
+        alert(r.ok ? `${name} eco-caged: throttled in the background, not killed. Click again in Interruptions to verify.` : `Refused: ${r.error}`);
+      } catch (error) { alert(error.message); }
+    };
+    document.addEventListener("click", async (event) => {
+      const button = event.target.closest("button[data-irq-action], button[data-cage-pid]");
+      if (!button || button.disabled) return;
+      button.disabled = true;
+      try {
+        if (button.dataset.irqAction) await irqAct(button.dataset.irqAction);
+        else await cage(Number(button.dataset.cagePid), button.dataset.cageName);
+      } finally { button.disabled = false; }
+    });
+    loadMouseControls();
+  </script>
+
+</body>
+</html>

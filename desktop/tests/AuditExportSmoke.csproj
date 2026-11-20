@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="../AuditExport.cs" Link="AuditExport.cs" />
+    <Compile Include="../EngineSupervisor.cs" Link="EngineSupervisor.cs" />
+    <Compile Include="../UpdateStatus.cs" Link="UpdateStatus.cs" />
+  </ItemGroup>
+</Project>

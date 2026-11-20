@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <DefineConstants>$(DefineConstants);SERVICE_STATUS_SMOKE</DefineConstants>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="../AuditExport.cs" Link="AuditExport.cs" />
+    <Compile Include="../EngineSupervisor.cs" Link="EngineSupervisor.cs" />
+    <Compile Include="../UpdateStatus.cs" Link="UpdateStatus.cs" />
+    <Compile Include="../ServiceStatusPipe.cs" Link="ServiceStatusPipe.cs" />
+    <Compile Include="../ServiceStatusScm.cs" Link="ServiceStatusScm.cs" />
+  </ItemGroup>
+</Project>

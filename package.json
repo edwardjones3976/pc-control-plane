@@ -1,0 +1,16 @@
+{
+  "name": "pc-control-plane",
+  "version": "0.8.0-public-preview.1",
+  "private": true,
+  "type": "module",
+  "license": "MIT",
+  "description": "Source preview of a local Windows telemetry and bounded automation control plane.",
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "start": "node server/index.js",
+    "check": "node server/index.js --check",
+    "test": "node --test tests/public-export.test.js tests/render-state.test.js tests/control-client.test.js tests/network-quality.test.js tests/lab-recovery.test.js tests/engine-lifecycle.test.js tests/http-boundary.test.js tests/desktop-migration.test.js",
+    "test:cockpit": "node tests/cockpit-performance-browser.mjs",
+    "test:ui": "node tests/desktop-comfort-browser.mjs && node tests/lab-browser.mjs"
+  }
+}

@@ -1,0 +1,13 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>PCP Architecture</title>
+<style>body{font:16px/1.6 system-ui;max-width:960px;margin:32px auto;padding:0 24px}code{overflow-wrap:anywhere}td,th{padding:12px;text-align:left;border-bottom:1px solid #bbb}</style>
+<h1>Architecture and Feature Status</h1><p>One control plane, separated observation, policy and execution layers. This public snapshot is for source review and isolated development, not live PC operation.</p>
+<table><tr><th>Area</th><th>Source</th><th>Public status</th></tr>
+<tr><td>Cockpit and audit interface</td><td>public/</td><td>Included; synthetic browser tests</td></tr>
+<tr><td>Desktop Comfort</td><td>public/comfort*; server/desktop-comfort.js</td><td>UI/model included; native adapter withheld</td></tr>
+<tr><td>Performance Lab and network</td><td>public/lab.html; public/network-quality.js</td><td>Source included; real mutations not qualified</td></tr>
+<tr><td>Policy and learning</td><td>server/</td><td>Source included; no personal training or history</td></tr>
+<tr><td>Desktop shell</td><td>desktop/</td><td>Developmental source; no installer or bundled runtime</td></tr>
+<tr><td>Windows adapters</td><td>Legacy calls remain visible in source</td><td>Standalone scripts omitted; runtime startup blocked</td></tr></table>
+<h2>Control Flow</h2><p>Detect, remediate, verify, learn, then prevent recurrence. Proactive prevention is distinct from post-remediation learning. The architecture registry in server/precedence.js describes precedence; it does not itself grant execution authority.</p>
+<h2>Open Engineering Work</h2><ul><li>Replace host assumptions with qualified configurable policies.</li><li>Complete adapter safety review, permission boundaries and recovery testing.</li><li>Verify the native shell, installer, upgrade, rollback and data retention.</li><li>Review jointly authored changes independently before release.</li></ul>
+<p><a href="../README.md">Project README</a></p></html>
