@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Frontend Verification</title>
+<style>body{font:16px/1.6 system-ui;max-width:900px;margin:32px auto;padding:0 24px}code{overflow-wrap:anywhere}</style>
+<h1>Frontend Verification</h1>
+<p>This note records the scope of the frontend checks completed on November 20, 2026. It contains no workstation readings, identifiers, screenshots or private runtime records.</p>
+<h2>Published Improvements</h2>
+<ul>
+<li>Monitoring distinguishes connecting, live, cached, stale, disconnected, paused and superseded states.</li>
+<li>Interrupted updates retain the last readings without presenting them as current measurements.</li>
+<li>Retry requests a status refresh; it does not apply a mode or perform a Windows recovery action.</li>
+<li>Unchanged markup is reused, and overlapping refresh requests are coalesced.</li>
+</ul>
+<h2>Development Installation Checks</h2>
+<p>The five served frontend assets matched the applied development source. The live status endpoint responded, the observer reported no error, and actual status and fast telemetry events reached the browser.</p>
+<p>An isolated test browser lost its stream and network connection, displayed reconnecting and last-reading states, then recovered after connectivity returned and Retry was selected. Cached readings remained labelled as cached after reconnection. No Windows mutation request was attempted.</p>
+<p>Browser checks found no normal-operation JavaScript errors or horizontal page overflow at 1920 by 1080 and 1280 by 720. Complete telemetry collection remained slower than fast stream updates; the state display does not solve collector latency.</p>
+<h2>Public Preview Boundary</h2>
+<p>These live checks exercised a separate development installation. They do not establish that this sanitized public snapshot is runnable, that its missing Windows adapters are qualified, or that an installer is production-ready. The public startup block remains intentional.</p>
+<h2>Repeatable Public Checks</h2>
+<p>Run <code>npm test</code> and <code>npm run check</code>. Frontend state regression tests are in <code>tests/render-state.test.js</code>; browser fixture requirements and release gates are described in <a href="development.html">Development and Validation</a>.</p>
+<p>Raw local diagnostics remain private. Future reports should distinguish source tests, mocked browser tests, live integration checks and packaged release acceptance.</p>
+</html>
