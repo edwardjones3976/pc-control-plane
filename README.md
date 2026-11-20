@@ -50,6 +50,7 @@ are not proof of hardware control.
 - [Architecture and feature status](docs/architecture.html)
 - [Privacy and publication boundaries](docs/privacy.html)
 - [Development and validation](docs/development.html)
+- [Frontend verification scope](docs/frontend-verification.html)
 - [Security reporting](SECURITY.md)
 - [Contributing](CONTRIBUTING.md)
 - [Third-party notices](THIRD_PARTY_NOTICES.md)
